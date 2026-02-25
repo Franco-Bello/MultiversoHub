@@ -8,6 +8,9 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
 
+// IMPORTANTE: EL PROVIDER DE FAVORITOS DEBE ESTAR EN ESTE ARCHIVO
+import { FavoritesProvider } from '@/context/FavoritesContext';
+
 export {
   // Catch any errors thrown by the Layout component.
   ErrorBoundary
@@ -49,11 +52,14 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-      </Stack>
-    </ThemeProvider>
+// EL PROVIDER DEBE ENVOLVER AL THEMEPROVIDER Y AL STACK
+    <FavoritesProvider> 
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="details/[id]" options={{ title: 'Detalle' }} />
+        </Stack>
+      </ThemeProvider>
+    </FavoritesProvider>
   );
 }
