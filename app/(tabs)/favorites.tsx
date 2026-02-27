@@ -73,7 +73,7 @@ export default function FavoritesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: { 
     flexDirection: 'row', 
@@ -85,12 +85,18 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 18, color: '#888' },
   countText: { fontWeight: 'bold' },
   clearLink: { color: 'red', fontWeight: 'bold' },
-  card: { 
+   card: { 
     flexDirection: 'row', 
+    marginHorizontal: 10,
+    marginVertical: 5,
     padding: 10, 
-    borderBottomWidth: 1, 
-    borderBottomColor: '#eee', 
-    alignItems: 'center' 
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
   },
   image: { width: 50, height: 50, borderRadius: 25 },
   info: { marginLeft: 15, flex: 1 },

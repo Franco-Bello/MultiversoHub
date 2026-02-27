@@ -1,19 +1,32 @@
+import { useColorScheme } from '@/components/useColorScheme'; // <--- IMPORTANTE: Hook para el tema
 import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-// Importamos TouchableOpacity para el botón
-import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useFavorites } from '../../context/FavoritesContext';
 import { Character, getCharacterById } from '../../services/api';
 import { logAction } from '../../services/telemetry';
-// IMPORTANTE: Traemos el hook de favoritos
-import { useFavorites } from '../../context/FavoritesContext';
+
+const { width } = Dimensions.get('window'); // <--- NUEVO: Para ajustar la tarjeta al ancho de pantalla
 
 export default function CharacterDetailScreen() {
   const { id } = useLocalSearchParams();
   const [character, setCharacter] = useState<Character | null>(null);
   const [loading, setLoading] = useState(true);
-
-  // CONECTAMOS CON EL CONTEXTO
   const { state, dispatch } = useFavorites();
+
+  // --- MODIFICACIÓN PARA TEMA OSCURO ---
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+
+  // Definición de colores dinámicos
+  const theme = {
+    background: isDark ? '#121212' : '#f8f9fa',
+    card: isDark ? '#1e1e1e' : '#ffffff',
+    text: isDark ? '#ffffff' : '#050000',
+    subtext: isDark ? '#ffffff' : '#000000',
+    border: isDark ? '#333333' : '#f0f0f0',
+    episodeTag: isDark ? '#333333' : '#e9ecef'
+  };
 
   useEffect(() => {
     if (id) loadCharacter();
@@ -31,10 +44,9 @@ export default function CharacterDetailScreen() {
     }
   };
 
-  if (loading) return <ActivityIndicator style={styles.center} size="large" />;
+  if (loading) return <View style={styles.center}><ActivityIndicator size="large" color="#00ff00" /></View>;
   if (!character) return <Text style={styles.center}>Personaje no encontrado</Text>;
 
-  // Verificamos si este personaje ya está en favoritos
   const isFavorite = state.favorites.some((fav) => fav.id === character.id);
 
   const toggleFavorite = () => {
@@ -48,58 +60,126 @@ export default function CharacterDetailScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Stack.Screen options={{ title: character.name }} />
       
-      <Image source={{ uri: character.image }} style={styles.image} />
-      
-      <View style={styles.infoContainer}>
-        <Text style={styles.label}>Estado:</Text>
-        <Text style={styles.value}>{character.status}</Text>
+      {/* --- TARJETA PRINCIPAL --- */}
+      <View style={[styles.card, { backgroundColor: theme.card, shadowColor: isDark ? '#000' : '#ffffff' }]}>
+        <Image source={{ uri: character.image }} style={styles.image} />
         
-        <Text style={styles.label}>Especie:</Text>
-        <Text style={styles.value}>{character.species}</Text>
+        <View style={[styles.headerInfo, { borderBottomColor: theme.border }]}>
+          <Text style={[styles.name, { color: theme.text }]}>{character.name}</Text>
+          <View style={[styles.statusBadge, { backgroundColor: character.status === 'Alive' ? '#4caf50' : '#f44336' }]}>
+            <Text style={styles.statusText}>{character.status}</Text>
+          </View>
+        </View>
 
-        {/* --- EL BOTÓN QUE TE FALTABA --- */}
-        <TouchableOpacity style={[styles.favButton, isFavorite ? styles.favActive : styles.favInactive]} onPress={toggleFavorite}>
-          <Text style={styles.favButtonText}>
-            {isFavorite ? "⭐ Quitar de Favoritos" : "☆ Agregar a Favoritos"}
+        <View style={styles.detailsRow}>
+          <View style={styles.detailItem}>
+            <Text style={[styles.label, { color: theme.subtext }]}>Especie</Text>
+            <Text style={[styles.value, { color: theme.text }]}>{character.species}</Text>
+          </View>
+
+        </View>
+
+        <TouchableOpacity 
+          style={[styles.favButton, isFavorite ? styles.favActive : styles.favInactive]} 
+          onPress={toggleFavorite}
+        >
+          <Text style={[styles.favButtonText, { color: isFavorite ? '#000' : '#666' }]}>
+            {isFavorite ? "⭐ En tus Favoritos" : "☆ Agregar a Favoritos"}
           </Text>
         </TouchableOpacity>
+      
 
-        <Text style={styles.subtitle}>Apariciones en Episodios:</Text>
-        {character.episode.map((ep, index) => (
-          <Text key={index} style={styles.episodeText}>
-            • Episodio {ep.split('/').pop()}
-          </Text>
-        ))}
+      {/* --- SECCIÓN DE EPISODIOS MODIFICADA --- */}
+      <View style={styles.episodesContainer}>
+        <Text style={[styles.subtitle, { color: theme.text }]}>Apariciones en Episodios</Text>
+        <View style={styles.episodesGrid}>
+          {character.episode.map((ep, index) => ( // Mostramos los primeros 10 para no saturar
+            <View key={index} style={[styles.episodeTag, { backgroundColor: theme.episodeTag }]}>
+              <Text style={[styles.episodeTagText, { color: theme.subtext }]}>EP {ep.split('/').pop()}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
       </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1 }, 
+  content: { paddingBottom: 30 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  image: { width: '100%', height: 300 },
-  infoContainer: { padding: 20 },
-  label: { fontSize: 14, fontWeight: 'bold', color: '#888', marginTop: 10 },
-  value: { fontSize: 18, marginBottom: 5 },
-  subtitle: { fontSize: 20, fontWeight: 'bold', marginTop: 20, marginBottom: 10 },
-  episodeText: { fontSize: 16, color: '#444', marginBottom: 4 },
-  // ESTILOS DEL BOTÓN
-  favButton: {
-    padding: 15,
-    borderRadius: 10,
-    marginTop: 20,
-    alignItems: 'center',
-    shadowColor: '#000',
+  
+  // --- ESTILOS DE LA TARJETA (NUEVO) ---
+  card: {
+
+    margin: 15,
+    borderRadius: 20,
+    overflow: 'hidden',
+    elevation: 5, // Sombra Android
+    shadowColor: '#000', // Sombra iOS
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 10,
   },
-  favActive: { backgroundColor: '#ffc107' }, // Amarillo
-  favInactive: { backgroundColor: '#f0f0f0' }, // Gris
-  favButtonText: { fontWeight: 'bold', fontSize: 16 }
+  image: { 
+    width: '100%', 
+    height: 400, 
+  },
+  headerInfo: {
+    padding: 20,
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  name: { 
+    fontSize: 26, 
+    fontWeight: '900', 
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 8
+  },
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  statusText: { color: '#fff', fontWeight: 'bold', fontSize: 12, textTransform: 'uppercase' },
+  
+  detailsRow: {
+    flexDirection: 'row',
+    padding: 20,
+    justifyContent: 'space-between',
+  },
+  detailItem: { alignItems: 'center', flex: 1 },
+  label: { fontSize: 12, color: '#aaa', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 },
+  value: { fontSize: 16, fontWeight: '600', color: '#444' },
+
+  // --- BOTÓN ESTILIZADO ---
+  favButton: {
+    margin: 20,
+    marginTop: 0,
+    padding: 15,
+    borderRadius: 15,
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  favActive: { backgroundColor: '#ffc107', borderColor: '#ffc107' },
+  favInactive: { backgroundColor: '#fff', borderColor: '#ddd' },
+  favButtonText: { fontWeight: 'bold', fontSize: 16 },
+
+  // --- EPISODIOS ESTILO GRID ---
+  episodesContainer: { paddingHorizontal: 20 },
+  subtitle: { fontSize: 18, fontWeight: 'bold', color: '#333', marginBottom: 15 },
+  episodesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  episodeTag: {
+    backgroundColor: '#e9ecef',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  episodeTagText: { fontSize: 12, color: '#666', fontWeight: 'bold' }
 });

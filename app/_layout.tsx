@@ -4,12 +4,16 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
+import { StyleSheet, Text, View } from 'react-native'; // <--- AÑADIDO: View, Text, StyleSheet
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
 
 // IMPORTANTE: EL PROVIDER DE FAVORITOS DEBE ESTAR EN ESTE ARCHIVO
 import { FavoritesProvider } from '@/context/FavoritesContext';
+
+// Importamos el hook
+import { useOffline } from '../hooks/useOffline';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -50,11 +54,19 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
+  const isOffline = useOffline(); // <--- NUEVO: Llamamos al hook aquí
 
   return (
 // EL PROVIDER DEBE ENVOLVER AL THEMEPROVIDER Y AL STACK
     <FavoritesProvider> 
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+
+        {isOffline && (
+          <View style={styles.offlineBanner}>
+            <Text style={styles.offlineText}>⚠️ Estás en modo offline</Text>
+          </View>
+        )}
+     
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="details/[id]" options={{ title: 'Detalle' }} />
@@ -63,3 +75,19 @@ function RootLayoutNav() {
     </FavoritesProvider>
   );
 }
+
+// --- NUEVO: ESTILOS PARA EL BANNER ---
+const styles = StyleSheet.create({
+  offlineBanner: {
+    backgroundColor: '#ff4444',
+    padding: 10,
+    paddingTop: 45, // Espacio extra para que no lo tape la barra de estado/notificaciones
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  offlineText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+});
